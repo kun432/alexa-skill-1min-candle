@@ -4,17 +4,16 @@
 const Alexa = require('ask-sdk-core');
 const Util = require('util.js');
 
-const BACKGROUND_IMAGE_URL = 'echo-show-bg-blue.png';
+const BACKGROUND_IMAGE_URL = '1min-candle-bg.png';
 const VIDEO_FILE_NAME = `candle_`;
 const VIDEO_FILE_EXT = '.mp4';
-const VIDEO_TITLE = "１分間キャンドル";
+const VIDEO_TITLE = "１分間キャンドル動画";
 const VIDEO_SUBTITLE = "この動画はpixabay.comの著作権フリーな動画を使用しています。";
 const TITLE = '１分間キャンドル';
-const TEXT = 'リラックスできましたか？この後もがんばってくださいね！';
 const FILE_NUM = 4;
 
 const WELCOME_MSG = 'このスキルでは、仕事の合間などに、すこーーーーしだけリラックスできる、キャンドルの動画をランダムで再生します。';
-const REPROMPT_MSG = '動画を再生する場合は再生と言ってくださいね。';
+const REPROMPT_MSG = '動画を再生する場合は「再生」と言ってくださいね。';
 
 const LaunchRequestIntentHandler = {
   canHandle(handlerInput) {
@@ -22,17 +21,39 @@ const LaunchRequestIntentHandler = {
   },
   handle(handlerInput) {
     if (supportsDisplay(handlerInput)) {
+
+      const pictureUrl = Util.getS3PreSignedUrl(`Media/${BACKGROUND_IMAGE_URL}`);
+      let backgroundImage = new Alexa.ImageHelper()
+        .withDescription(TITLE)
+        .addImageInstance(pictureUrl)
+        .getImage();
+
+      let primaryText = new Alexa.RichTextContentHelper()
+        .withPrimaryText(TITLE + 'へようこそ。')
+        .getTextContent();
+
+      let myTemplate = {
+        type: 'BodyTemplate1',
+        token: 'Welcome',
+        backButton: 'HIDDEN',
+        backgroundImage: backgroundImage,
+        title: TITLE,
+        textContent: primaryText,
+      }
+
       handlerInput.responseBuilder
         .speak('<say-as interpret-as="interjection">お疲れ様です。</say-as>' + TITLE + 'へようこそ。' + WELCOME_MSG + REPROMPT_MSG)
-        .reprompt(REPROMPT_MSG);
+        .withShouldEndSession(false)
+        .reprompt(REPROMPT_MSG)
+        .addRenderTemplateDirective(myTemplate);
 
     } else {
       handlerInput.responseBuilder
-        .withSimpleCard(TITLE, "このスキルを利用するにはディスプレイ対応デバイスが必要です。")
         .speak('<say-as interpret-as="interjection">ごめんなさい</say-as>、このスキルを利用するにはディスプレイ対応デバイスが必要です。<sub alias="エコーショウ">echo show</sub>か、<sub alias="エコースポット">echo spot</sub>でまた呼び出してくださいね')
+        .withShouldEndSession(true)
+        .withSimpleCard(TITLE, "このスキルを利用するにはディスプレイ対応デバイスが必要です。");
     }
     return handlerInput.responseBuilder
-      .withShouldEndSession(false)
       .getResponse();
   }
 };
@@ -52,7 +73,7 @@ const PlayVideoIntentHandler = {
         .getImage();
 
       let primaryText = new Alexa.RichTextContentHelper()
-        .withPrimaryText(TEXT)
+        .withPrimaryText('キャンドルでリフレッシュしたら、またがんばりましょう！リラックスしたくなったときは、いつでもどうぞ！')
         .getTextContent();
 
       let myTemplate = {
@@ -63,22 +84,24 @@ const PlayVideoIntentHandler = {
         title: TITLE,
         textContent: primaryText,
       }
+
       let VIDEO_URL = Util.getS3PreSignedUrl(`Media/${VIDEO_FILE_NAME}${getRandom(FILE_NUM)}${VIDEO_FILE_EXT}`);
 
       handlerInput.responseBuilder
         .speak('<say-as interpret-as="interjection">わかりました</say-as>。では、肩の力を抜いて、ゆっくり御覧ください。')
-        .addVideoAppLaunchDirective(VIDEO_URL, VIDEO_TITLE, VIDEO_SUBTITLE)
+        .withShouldEndSession(true)
+        .addVideoAppLaunchDirective(VIDEO_URL)
         .addRenderTemplateDirective(myTemplate)
         .withSimpleCard(TITLE, VIDEO_SUBTITLE)
 
     } else {
       handlerInput.responseBuilder
-        .withSimpleCard(TITLE, "このスキルを利用するにはディスプレイ対応デバイスが必要です。")
-        .speak("このスキルを利用するにはディスプレイ対応デバイスが必要です。ごめんなさい。echo show(エコーショウ)か、echo spot(エコースポット)でまた呼び出してくださいね")
+        .speak('<say-as interpret-as="interjection">ごめんなさい</say-as>、このスキルを利用するにはディスプレイ対応デバイスが必要です。<sub alias="エコーショウ">echo show</sub>か、<sub alias="エコースポット">echo spot</sub>でまた呼び出してくださいね')
+        .withShouldEndSession(true)
+        .withSimpleCard(TITLE, "このスキルを利用するにはディスプレイ対応デバイスが必要です。");
     }
 
     return handlerInput.responseBuilder
-      .withShouldEndSession(true)
       .getResponse();
 
   },
@@ -91,7 +114,7 @@ const HelpIntentHandler = {
   },
   handle(handlerInput) {
     return handlerInput.responseBuilder
-      .speak(WELCOME_MSG)
+      .speak(WELCOME_MSG + '現在の動画数は' + FILE_NUM + '種類です。' + REPROMPT_MSG)
       .reprompt(REPROMPT_MSG)
       .withShouldEndSession(false)
       .getResponse();
