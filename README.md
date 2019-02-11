@@ -45,3 +45,7 @@ $ cd alexa-skill-1min-candle
   - 「Media storage: S3」をクリックしてS３画面を開く
     - レポジトリ内のMediaディレクトリ配下の画像・動画ファイルをアップロード
 - テストして確かめてください
+
+### その他
+
+- 動画は[pixabay](https://pixabay.com/)のロイヤリティフリー動画を利用しています。
